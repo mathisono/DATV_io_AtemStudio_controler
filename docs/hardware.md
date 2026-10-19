@@ -13,14 +13,37 @@ The ESP32 carries control information only. Each demodulator's decoded HDMI/SDI 
 | Item | Quantity | Selection requirement |
 | --- | ---: | --- |
 | Olimex ESP32-POE-ISO, WROOM variant | 1 | Standard board targeted by this firmware; inspect the revision printed on the delivered PCB |
-| Isolated digital-input interface | At least 6 channels | Receiver-side voltage/current range must match the actual alarm output; controller side must be 3.3 V compatible |
-| Controller-side pull-up resistors | 6 | 10 kΩ to the controller's 3.3 V rail is the proposed starting value for the sinking-output interface below; account for existing board pull-ups |
+| Contact-sensing input interface | At least 6 channels | For the ProView dry contacts, use protected/filtered sensing with a 3.3 V-compatible controller output; an isolated module may be used with its specified wetting supply/current |
+| Controller-side pull-up resistors | As required for 6 channels | 10 kΩ to the controller's 3.3 V rail is a bench starting value; account for existing board pull-ups, noise and the relay's required contact current |
 | Ethernet switch and patch cables | As required | Controller and ATEM must have IP connectivity; use an IEEE 802.3af PoE switch/injector if powering the Olimex over Ethernet |
 | USB data cable | 1 | Micro-USB for initial flash and serial commissioning |
 | Enclosure, terminal connectors, strain relief | 1 set | Label alarm number, associated ATEM input, signal, and return; protect the board from conductive contact |
 | Receiver-side interface supply | If required | Use the input module's specification; do not assume the ESP32 can supply the field side of every channel |
 
 Olimex's manual limits the combined external load on this board's 5 V and 3.3 V outputs to approximately **1 W**. Include the input-interface load in the power budget. The ATEM uses its own supply; this project does not power it.
+
+## Identified receiver: Harmonic ProView 7100
+
+The ProView 7100 has **five configurable dry-contact relays** at its GPI connector.
+This supersedes the original assumption of a powered HIGH-on-lock output. Allocate
+one configured relay from each of the six receivers to the six controller inputs.
+See the [ProView-specific pinout, revision caveats and commissioning truth
+table](receivers/harmonic-proview-7100.md) for the manufacturer references.
+
+A verified isolated contact can connect controller ground to a protected GPIO
+input with a pull-up to the controller's own 3.3 V rail: closed reads LOW, open
+reads HIGH. The contact supplies no voltage. An additional optocoupler is optional
+for this voltage translation; input protection, filtering and the contact's
+electrical ratings still determine the final interface. An industrial isolated
+input module may instead sense the contact using its own rated wetting supply.
+
+**Closed does not automatically mean healthy.** Configure the selected receiver
+alarms and measure healthy video, RF loss, decoder failure, receiver boot,
+receiver power-off and disconnected-cable states. The manuals do not establish
+an energized-healthy relay truth table. If healthy video and an unhealthy case
+look identical, software polarity cannot distinguish them. Use an additional verified condition
+before enabling automatic switching. Current firmware has no receiver network
+freshness check to resolve this ambiguity.
 
 ## Six input connections on the Olimex
 
@@ -39,9 +62,13 @@ Controller 3.3 V is EXT1 pin 2; controller ground is EXT1 pin 3. Do not install 
 
 References: [Olimex revision N schematic](https://github.com/OLIMEX/ESP32-POE-ISO/blob/master/HARDWARE/ESP32-PoE-ISO-Rev.N/ESP32-PoE-ISO_Rev_N.pdf), [machine-readable manufacturer schematic](https://github.com/OLIMEX/ESP32-POE-ISO/blob/master/HARDWARE/ESP32-PoE-ISO-Rev.N/ESP32-PoE-ISO_Rev_N.kicad_sch), [Arduino 2.0.17 board variant](https://github.com/espressif/arduino-esp32/blob/2.0.17/variants/esp32-poe-iso/pins_arduino.h).
 
-### Preferred receiver interface: isolated sinking outputs
+### Optional isolated interface for powered HIGH-on-lock alarms
 
-For a receiver whose alarm drives HIGH when video is locked, arrange the isolated interface so that the receiver's asserted alarm turns its optocoupler on. On the ESP32 side, the corresponding transistor sinks the GPIO to controller ground.
+This section applies to a separately verified powered logic alarm or an interface
+engineered to energize when healthy. It is not the ProView's native dry-contact
+output. For such a HIGH-on-lock source, arrange the isolated interface so that the
+asserted alarm turns its optocoupler on. On the ESP32 side, the corresponding
+transistor sinks the GPIO to controller ground.
 
 | Connection | Destination |
 | --- | --- |
@@ -66,11 +93,15 @@ The existing 2.2 kΩ pull-up on GPIO13 must be included when choosing the isolat
 
 GPIO13 and GPIO36 are already pulled HIGH on the Olimex board. An unplugged direct HIGH-on-lock signal can therefore look locked. A 10 kΩ pull-down does not cancel the 2.2 kΩ pull-up on GPIO13; on GPIO36 it makes a nominal mid-rail divider against the board's 10 kΩ pull-up.
 
-For a direct non-inverting interface, use an actively driven, correctly powered 3.3 V output and engineer the disconnected/power-off state, or revise the bias circuit deliberately. Changing a software polarity flag does not fix an incompatible voltage or an indeterminate input level. The isolated sinking arrangement above is the recommended production wiring for the configured Olimex pins.
+For a direct non-inverting interface, use an actively driven, correctly powered 3.3 V output and engineer the disconnected/power-off state, or revise the bias circuit deliberately. Changing a software polarity flag does not fix an incompatible voltage or an indeterminate input level. A verified healthy-state sinking interface suits the configured Olimex pins; the ProView relay's actual state must be established separately.
 
 ## Receiver output types
 
-The demodulator model, alarm connector, output circuit, HIGH voltage, LOW voltage, and source/sink current have not been specified. That prevents selection of the final field-side interface values, but does not prevent building and testing the controller firmware.
+The installed receiver model is now identified as the ProView 7100, with documented
+dry contacts. Its actual connector revision, contact ratings and configured
+fault/power behavior still need to be checked on the delivered units. The table
+below is a reference for other receivers or external alarm interfaces; it does
+not imply that the ProView provides each of these output types.
 
 | Actual alarm output | Suitable interface approach |
 | --- | --- |

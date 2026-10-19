@@ -6,7 +6,13 @@ This firmware runs on the ESP32 and serves its control page locally. The origina
 
 Use the **Olimex ESP32-POE-ISO WROOM** for the wired installation, or the **ESP32-WROOM Wi-Fi development environment** for initial bench work. Read [hardware.md](hardware.md) before attaching receiver alarm outputs. The two environments have different GPIO assignments and default input polarities.
 
-Confirm the receiver alarm's voltage, output type and connector pinout before connecting it. The production wiring described in that document converts a receiver HIGH-on-lock alarm into a GPIO LOW-on-lock through an isolated sinking interface. Its polarity setting is therefore `activeHigh=false`.
+The identified **Harmonic ProView 7100 uses dry-contact relays**. Read the
+[receiver compatibility review](receivers/harmonic-proview-7100.md), confirm the
+actual GPI pinout and configure the desired alarm assignments before connecting
+it. The contact-sensing interface supplies its own sensing voltage. The production
+firmware defaults to `activeHigh=false`; retain that only if the complete
+interface gives GPIO LOW for the verified healthy condition. Measure receiver
+power-off and cable-disconnection behavior as well as RF/decoder faults.
 
 ## 2. Install the build tools and compile
 
@@ -91,7 +97,7 @@ The default five-minute setting is a **dwell time for rotation while multiple re
 Perform these checks with the ATEM's Program output off air or connected to a test destination. Software tests validate the state machine and protocol handling, but do not prove the receiver wiring, a real Ethernet PHY, or a particular ATEM firmware version works.
 
 1. **Confirm manual control.** With automation disarmed, connect to the ATEM from the web page and select known sources. Compare the page's returned Program state with the ATEM's actual Program output. A command being sent is not the same as receiving state confirmation.
-2. **Prove alarm polarity.** On each receiver, observe loss of lock and acquisition of lock while watching the page's raw/interpreted input status. With the recommended isolator, a raw LOW should become an interpreted lock. Unplug the field-side alarm lead and verify that it becomes unlocked.
+2. **Prove alarm meaning and polarity.** On each ProView, compare normal reception, RF loss, decoder failure with RF still locked, boot, receiver power-off and unplugged alarm cable while watching raw/interpreted input status. Each unhealthy case must become ineligible. Do not assume NC means healthy or that merely changing polarity fixes indistinguishable relay states. Current firmware reads GPIO only and has no ProView SNMP/XML or network-freshness check. Complete the receiver review's truth table and resolve any ambiguous states before arming.
 3. **Prove the mapping.** Enable one receiver at a time, arm automation and verify that its actual associated video appears on Program after the acquisition interval. Repeat for all six inputs.
 4. **Test overlap.** Lock two receivers together and verify the chosen multiple-lock policy. For a quick bench test, temporarily shorten the dwell interval; restore it to 300 seconds afterward. Repeat with a third receiver and with the current source losing lock.
 5. **Test short disturbances.** Brief alarm chatter should be filtered by the acquire/release timers. An actual sustained loss must eventually remove that source and produce the configured remaining-source or fallback behavior.
@@ -103,7 +109,7 @@ The controller reacts to the receiver's alarm; it does not verify the picture co
 
 ## 7. Update and keep an installation record
 
-Disarm automation and use the same environment's USB upload command for updates. Record the repository commit, board variant/revision, ATEM model/firmware, network addresses, receiver alarm electrical specification, channel map, timing policy and commissioning result. Keep a copy of the previously working firmware/build revision so it can be restored if an update changes behavior.
+Disarm automation and use the same environment's USB upload command for updates. Record the repository commit, board variant/revision, ATEM model/firmware, network addresses, ProView firmware/hardware/licenses, relay assignments and measured truth table, video modes, channel map, timing policy and commissioning result. Keep a copy of the previously working firmware/build revision so it can be restored if an update changes behavior.
 
 A successful build or simulated protocol test is not an on-hardware acceptance result. The first installed controller still needs the bench checks above with the actual receiver and ATEM.
 

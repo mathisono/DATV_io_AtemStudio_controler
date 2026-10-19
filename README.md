@@ -5,7 +5,12 @@ associated video input on an **original six-input Blackmagic ATEM Television
 Studio**. A web page served by the ESP32 provides manual switching, actual
 Program/Preview feedback, live alarm status, and persistent configuration.
 
-The receiver alarm is expected to represent valid decoded video. Video connects
+This installation uses **Harmonic ProView 7100** receivers. Their documented GPI
+outputs are configurable **dry relay contacts**, so the input interface must sense
+contacts using its own supply. See the [ProView compatibility and monitoring
+review](docs/receivers/harmonic-proview-7100.md) before wiring or arming automation.
+
+The configured receiver alarm must represent valid decoded video. Video connects
 directly from each receiver to the ATEM; the ESP32 handles alarm inputs and
 Ethernet control only. It sends the ATEM's UDP control protocol on port **9910**.
 It does not use RS-232 or the ATEM's USB port.
@@ -13,7 +18,7 @@ It does not use RS-232 or the ATEM's USB port.
 ```mermaid
 flowchart TD
     RX["Six DVB-S2 receivers"] -->|"HDMI / SDI video"| ATEM["ATEM Television Studio"]
-    RX -->|"Six lock signals"| DI["Isolated input interface"]
+    RX -->|"Six relay contacts"| DI["Contact-sensing interface"]
     DI -->|"3.3 V GPIO levels"| MCU["ESP32 controller"]
     WEB["Operator browser"] <-->|"Local web page"| MCU
     MCU -->|"Ethernet control · UDP 9910"| ATEM
@@ -22,6 +27,8 @@ flowchart TD
 **Status: initial implementation, compiled and tested in software. Physical
 ESP32/receiver/ATEM commissioning is still required.** See
 [deployment](docs/deployment.md) and [validation](docs/validation.md).
+Receiver SNMP/XML polling and trap reception are **not implemented** in this
+version; the current lock indications come from qualified GPIO inputs.
 
 ## Included
 
@@ -72,22 +79,25 @@ continuous-overlap timer, not a rolling history of receiver events. See the
 ## Recommended hardware
 
 Use the **Olimex ESP32-POE-ISO, standard ESP32-WROOM variant**, an appropriately
-rated six-channel isolated input interface, and wired Ethernet. The board has
+conditioned six-channel contact-sensing interface, and wired Ethernet. The board has
 PoE and a USB programmer. Its PoE isolation does **not** isolate alarm GPIOs.
 
 | Build target | Board | Alarm GPIOs | Default asserted level at ESP32 |
 | --- | --- | --- | --- |
-| `esp32-poe-iso` | Olimex ESP32-POE-ISO, WROOM | 4, 13, 14, 32, 33, 36 | LOW, through the recommended sinking optocoupler interface |
+| `esp32-poe-iso` | Olimex ESP32-POE-ISO, WROOM | 4, 13, 14, 32, 33, 36 | LOW; configure polarity to match the verified contact/interface behavior |
 | `esp32dev_wifi` | Generic ESP32-WROOM development board | 16, 17, 18, 19, 21, 22 | HIGH, for known 3.3 V bench logic |
 
-Your receiver's **HIGH = video lock** is preserved logically. On the production
-interface, that HIGH energizes an optocoupler, pulling the ESP32 pin LOW. The
-firmware's per-channel polarity setting accounts for this inversion.
+The original powered **HIGH = video lock** assumption is superseded by the
+identified ProView's relay interface. A contact can pull a controller-side input
+LOW when closed, but the relay's healthy, fault and power-off behavior must be
+measured before choosing the firmware's per-channel polarity. An NC contact is
+not automatically a power-loss-safe indication of healthy video.
 
 **Do not connect an unknown, 5 V, 12 V, or 24 V alarm directly to ESP32 GPIO.**
-The demodulator's model, alarm voltage, output type and drive current are needed
-to finish the field-side circuit. GPIO13 and GPIO36 also have existing pull-ups
-on the Olimex board. Read the [pin table and wiring guide](docs/hardware.md).
+The ProView contact supplies no alarm voltage. Verify the actual connector
+revision, relay/contact specifications and complete fault behavior to finish the
+input circuit. GPIO13 and GPIO36 also have existing pull-ups on the Olimex board.
+Read the [pin table and wiring guide](docs/hardware.md).
 
 ## Build and install
 
@@ -152,6 +162,7 @@ these checks and both firmware builds. See [test scope](docs/validation.md).
 | Area | Location |
 | --- | --- |
 | Field wiring and board selection | [docs/hardware.md](docs/hardware.md) |
+| ProView 7100 contacts, video/RF compatibility and proposed network monitoring | [docs/receivers/harmonic-proview-7100.md](docs/receivers/harmonic-proview-7100.md) |
 | Build, network setup, commissioning | [docs/deployment.md](docs/deployment.md) |
 | Timer and selection semantics | [docs/behavior.md](docs/behavior.md) |
 | HTTP control API | [docs/api.md](docs/api.md) |

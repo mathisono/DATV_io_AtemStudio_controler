@@ -36,14 +36,25 @@ download endpoints returned invalid archives.
 GitHub Actions repeats the native/dashboard tests and both firmware builds. The
 workflow neither flashes hardware nor controls an on-air switcher.
 
+## ProView 7100 documentation review
+
+The [receiver compatibility review](receivers/harmonic-proview-7100.md) identifies
+dry-contact alarm wiring, shared video modes and documented receiver monitoring
+interfaces. This is a review of manufacturer and integration documentation, not
+a successful hardware interoperability test. **SNMP/XML polling, trap reception,
+live modulation reporting and a receiver-status freshness gate are not implemented
+in the current firmware.** Matching receiver firmware/MIB/API information and
+observed responses are required before those features can be implemented and
+validated. The existing GPIO `locked` status only reports qualified input state.
+
 ## What requires hardware
 
 The following remain to be established on the delivered equipment:
 
-1. Receiver alarm pinout, voltage, source/sink current, and whether the alarm means
-   decoded video, transport-stream lock, or only RF lock.
-2. Input conditioning, polarity, disconnected-cable state, isolation and noise
-   behavior on all six installed channels.
+1. ProView GPI pinout/revision, contact ratings, configured relay alarm assignments,
+   and whether the chosen condition represents the active decoded service.
+2. Input conditioning, polarity, disconnected-cable, receiver boot/power-off and
+   decoder-failure states, isolation and noise behavior on all six installed channels.
 3. The actual board revision, Ethernet PHY initialization, DHCP, interface changes,
    packet loss recovery, and recovery after a power interruption.
 4. ATEM handshake/command interoperability with the original switcher's installed
