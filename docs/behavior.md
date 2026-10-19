@@ -10,8 +10,11 @@ compiled board profile and are not editable in the web page.
 Every 10 ms the main loop samples the electrical input level. `activeHigh=true`
 means GPIO HIGH represents lock; `false` means GPIO LOW represents lock. This is
 the level **after the electrical interface**, not necessarily the receiver's
-unconditioned alarm level. In the recommended optocoupler circuit, receiver HIGH
-produces GPIO LOW and therefore uses `activeHigh=false`.
+unconditioned alarm level. An optional HIGH-on-lock optocoupler circuit can produce
+GPIO LOW and use `activeHigh=false`. The identified ProView 7100 provides dry relay
+contacts; determine polarity from the verified contact/interface behavior described
+in the [receiver wiring review](receivers/harmonic-proview-7100.md). A qualified GPIO
+is not an independent verification of healthy decoded video.
 
 An asserted level must persist continuously for the acquisition time before
 becoming qualified. A qualified lock remains present until deassertion persists

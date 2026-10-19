@@ -134,6 +134,10 @@ Poll all six receivers independently. Use response deadlines and a bounded fresh
 
 ## Evidence needed for commissioning
 
+Use the [ordered next-steps checklist](proview-next-steps.md) for documented firmware
+and inventory menu paths, collection worksheets, implementation dependencies and
+acceptance criteria.
+
 For each hardware variant, collect a rear-panel photo, firmware version, hardware inventory, installed licenses, selected RF/decoder path, and output mode. For network status, obtain the matching MIB/API package and representative healthy, unlocked, and decoder-failure responses. For contact operation, complete the fault/power truth table above. Keep automation paused until these checks establish the actual meaning of each source's input.
 
 ## Sources and scope

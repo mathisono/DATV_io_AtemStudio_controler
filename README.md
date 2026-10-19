@@ -163,6 +163,7 @@ these checks and both firmware builds. See [test scope](docs/validation.md).
 | --- | --- |
 | Field wiring and board selection | [docs/hardware.md](docs/hardware.md) |
 | ProView 7100 contacts, video/RF compatibility and proposed network monitoring | [docs/receivers/harmonic-proview-7100.md](docs/receivers/harmonic-proview-7100.md) |
+| ProView firmware collection and ordered implementation checklist | [docs/receivers/proview-next-steps.md](docs/receivers/proview-next-steps.md) |
 | Build, network setup, commissioning | [docs/deployment.md](docs/deployment.md) |
 | Timer and selection semantics | [docs/behavior.md](docs/behavior.md) |
 | HTTP control API | [docs/api.md](docs/api.md) |
