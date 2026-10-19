@@ -1,0 +1,10 @@
+.pio/
+.venv/
+build/
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+secrets.h
+config.local.json
+node_modules/
