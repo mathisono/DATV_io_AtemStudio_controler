@@ -1,0 +1,8 @@
+{
+  "name": "DatvAtemClient",
+  "version": "0.1.0",
+  "description": "Bounded ATEM UDP client for a six-input DATV alarm controller",
+  "frameworks": "arduino",
+  "platforms": "espressif32",
+  "build": { "includeDir": "include", "srcDir": "src" }
+}

@@ -1,0 +1,29 @@
+[Unit]
+Description=W6CX DATV ATEM controller (LattePanda)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=datv
+Group=datv
+SupplementaryGroups=dialout
+WorkingDirectory=/opt/datv-atem
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=DATV_BIND=127.0.0.1
+Environment=DATV_PORT=8080
+EnvironmentFile=-/etc/default/datv-atem
+ExecStart=/usr/bin/python3 /opt/datv-atem/linux/controller.py --config /var/lib/datv-atem/config.json
+Restart=on-failure
+RestartSec=3
+StateDirectory=datv-atem
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+# Do not enable PrivateDevices: this service needs the onboard USB CDC device.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10141c">
+  <meta name="color-scheme" content="dark">
+  <title>DATV · ATEM control</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to controls</a>
+  <header class="masthead">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">D</span><div><strong>DATV <span>/ ATEM</span></strong><small>RECEIVER CONTROL</small></div></div>
+    <div class="header-status"><span class="status-light" id="controller-light"></span><span id="controller-status">Connecting…</span><span class="header-ip" id="controller-ip">—</span></div>
+  </header>
+  <main id="main" class="shell">
+    <div class="page-heading"><div><p class="eyebrow">LOCAL SWITCHER CONTROL</p><h1>Receiver routing</h1></div><nav class="tabs" aria-label="Dashboard views"><button type="button" class="tab active" data-tab="control" aria-current="page">Control</button><button type="button" class="tab" data-tab="setup">Setup</button></nav></div>
+    <div id="connection-alert" class="notice warning" role="status" hidden><span id="connection-alert-text"></span><button type="button" class="button" id="reload-dashboard" hidden>Reload &amp; sign in</button></div>
+    <div id="notification" class="notice" role="status" aria-live="polite" hidden><span id="notification-text"></span><button type="button" class="dismiss" id="dismiss-notification" aria-label="Dismiss notification">×</button></div>
+
+    <section id="view-control" aria-label="Switcher control">
+      <div class="monitor-grid">
+        <section class="monitor program-monitor" aria-labelledby="program-heading"><div class="monitor-heading"><h2 id="program-heading">PROGRAM</h2><span class="feedback-tag" id="program-feedback">AWAITING FEEDBACK</span></div><p class="monitor-source" id="program-source">—</p><p class="monitor-label" id="program-label">Waiting for the switcher</p></section>
+        <section class="monitor preview-monitor" aria-labelledby="preview-heading"><div class="monitor-heading"><h2 id="preview-heading">PREVIEW</h2><span class="feedback-tag" id="preview-feedback">AWAITING FEEDBACK</span></div><p class="monitor-source" id="preview-source">—</p><p class="monitor-label" id="preview-label">Waiting for the switcher</p></section>
+        <section class="monitor link-monitor" aria-labelledby="atem-heading"><div class="monitor-heading"><h2 id="atem-heading">ATEM LINK</h2><span class="status-light" id="atem-light"></span></div><p class="link-state" id="atem-state">Connecting…</p><p class="monitor-label" id="atem-product">No switcher feedback yet</p><p class="link-detail" id="atem-address">Set the switcher address in Setup</p></section>
+      </div>
+
+      <section class="automation-bar" aria-labelledby="automation-heading">
+        <div class="automation-copy"><div class="section-title"><h2 id="automation-heading">Automatic routing</h2><span class="badge muted" id="mode-badge">WAITING</span></div><p id="automation-reason">Waiting for controller status.</p><div class="automation-meta"><span id="eligible-count">— eligible inputs</span><span id="policy-timer" hidden></span></div></div>
+        <div class="mode-actions"><button type="button" id="resume-auto" class="button accent" disabled>Resume auto</button><button type="button" id="pause-auto" class="button" disabled>Pause auto</button></div>
+      </section>
+
+      <div class="section-heading"><div><h2>Receiver inputs</h2><p>Qualified locks drive automatic selection.</p></div><div class="legend"><span><i class="legend-dot locked"></i>Locked</span><span><i class="legend-dot onair"></i>Program</span></div></div>
+      <p id="arduino-status" class="notice subtle" hidden></p>
+      <div id="inputs" class="input-grid" aria-label="Six receiver inputs"></div>
+
+      <section class="panel manual-panel" aria-labelledby="manual-heading"><div><h2 id="manual-heading">Manual switcher controls</h2><p>Take, Cut, Auto transition and Fade to black pause automatic routing. Preview keeps its current mode.</p></div><div class="manual-actions"><button type="button" class="button" data-action="preview" data-source="0" disabled>Preview black</button><button type="button" class="button cut-button" data-action="cut" disabled>Cut</button><button type="button" class="button" data-action="auto" disabled>Auto transition</button><button type="button" class="button danger-outline" data-action="ftb" id="ftb-button" aria-pressed="false" disabled>Fade to black</button></div><p class="feedback-note" id="transition-state">Program and Preview above reflect ATEM feedback, not queued commands.</p></section>
+
+      <section class="panel event-panel" aria-labelledby="events-heading"><div class="section-title"><h2 id="events-heading">Recent activity</h2><span class="quiet">Controller uptime</span></div><ol class="events" id="events"><li class="empty-state">No events received yet.</li></ol></section>
+    </section>
+
+    <section id="view-setup" aria-label="Controller setup" hidden>
+      <div class="notice subtle">Saving settings pauses automatic routing. After checking your settings, return to Control and select Resume auto.</div>
+      <form id="settings-form" autocomplete="off">
+        <fieldset class="panel" id="settings-fields" disabled>
+          <legend class="sr-only">Controller settings</legend>
+          <section class="settings-section"><div class="settings-heading"><h2>Network</h2><p id="os-network-help" hidden>Configure Ethernet, Wi-Fi, and the computer hostname in Linux Mint.</p><p>Connect the controller and switcher to the same reachable network.</p></div><div class="form-grid">
+            <label>ATEM IPv4 address<input name="atemIp" id="setting-atem-ip" type="text" inputmode="decimal" placeholder="192.168.1.240" maxlength="15" spellcheck="false"><small>Applies immediately. Leave blank until the switcher address is known.</small></label>
+            <label>Controller hostname<input name="hostname" type="text" maxlength="31" pattern="[A-Za-z0-9]([A-Za-z0-9-]{0,29}[A-Za-z0-9])?" required spellcheck="false"><small>1–31 letters, numbers and hyphens. Network changes require a restart.</small></label>
+            <label>Wi-Fi network name<input name="wifiSsid" type="text" maxlength="32" spellcheck="false"><small>Used when the selected hardware uses Wi-Fi.</small></label>
+            <div class="password-setting"><label>Wi-Fi password<input name="wifiPassword" type="password" maxlength="63" autocomplete="new-password"><small id="wifi-password-help">Leave blank to keep the stored password.</small></label><label class="check-label"><input name="clearWifiPassword" type="checkbox"><span>Clear saved Wi-Fi password</span></label></div>
+          </div></section>
+
+          <section class="settings-section"><div class="settings-heading"><h2>Lock timing &amp; routing</h2><p>Acquire and release delays filter short changes in receiver lock.</p></div><div class="form-grid">
+            <label>Lock acquire delay <span class="unit">ms</span><input name="acquireMs" type="number" min="0" max="60000" step="1" required><small>A signal must stay asserted for this duration to qualify.</small></label>
+            <label>Lock release delay <span class="unit">ms</span><input name="releaseMs" type="number" min="0" max="60000" step="1" required><small>Hold the qualified lock through shorter signal losses.</small></label>
+            <label>Multiple-lock policy<select name="multiPolicy" id="setting-policy"><option value="round_robin">Rotate locked inputs</option><option value="priority">Input priority</option><option value="conflict">Selected source after delay</option></select><small id="policy-help">Rotate between eligible inputs while more than one is locked.</small></label>
+            <label>Switch interval / conflict delay <span class="unit">seconds</span><input name="switchIntervalSec" type="number" min="1" max="86400" step="1" required><small id="interval-help">300 seconds = 5 minutes.</small></label>
+            <label>No-lock fallback<select name="fallbackSource" class="source-select"></select><small>Source to take when no enabled input has a qualified lock.</small></label>
+            <label id="conflict-source-label">Multiple-lock source<select name="conflictSource" class="source-select"></select><small>This source is taken after the delay, even if it has no receiver lock.</small></label>
+          </div><label class="check-label external-control"><input name="respectExternalControl" type="checkbox"><span>Pause automatic routing when another controller changes Program<small>Allows an operator using ATEM Software Control or a panel to take over.</small></span></label></section>
+
+          <section class="settings-section"><div class="settings-heading"><h2>Receiver mapping</h2><p>Enabled alarms must map to different ATEM inputs. Priority 1 is highest; priority 6 is lowest. Polarity is measured at the controller GPIO, after the input interface.</p></div><div id="input-settings" class="mapping-grid"></div></section>
+
+          <section class="settings-section"><div class="settings-heading"><h2>Dashboard access</h2><p id="dashboard-access-help">Sign in as admin. The device password also protects its setup Wi-Fi network.</p></div><div class="form-grid"><label>New administrator password <span class="unit">optional</span><input name="adminPassword" type="password" maxlength="63" autocomplete="new-password"><small>12–63 characters. Leave blank to keep the existing password. A change requires signing in again.</small></label><div class="device-info"><span>Deployment</span><strong id="board-name">—</strong><small id="network-detail">Waiting for controller status</small></div></div></section>
+        </fieldset>
+        <div class="save-bar"><p id="save-state">Waiting for settings…</p><div class="save-actions"><button type="button" id="discard-settings" class="button" disabled>Discard changes</button><button type="submit" id="save-settings" class="button accent" disabled>Save settings</button></div></div>
+      </form>
+      <section class="panel restart-panel"><div><h2>Restart controller</h2><p id="restart-help">Network changes take effect after restarting. Automatic routing starts paused.</p></div><button type="button" id="restart-controller" class="button" disabled>Restart</button></section>
+    </section>
+    <footer><span>DATV / ATEM controller</span><span id="footer-status">Waiting for live status</span></footer>
+  </main>
+
+  <template id="input-template"><article class="input-card"><div class="input-card-top"><span class="input-number"></span><span class="badge lock-badge muted">WAITING</span></div><h3 class="input-label"></h3><p class="input-route"></p><div class="input-tallies"><span class="tally program-tally">PROGRAM</span><span class="tally preview-tally">PREVIEW</span></div><div class="lock-detail"><span class="raw-level">GPIO —</span><span class="lock-timing"></span></div><div class="input-actions"><button type="button" class="button take-button" data-action="program" disabled>Take</button><button type="button" class="button preview-button" data-action="preview" disabled>Preview</button></div></article></template>
+  <template id="mapping-template"><section class="mapping-card"><div class="mapping-title"><h3></h3><label class="check-label"><input type="checkbox" class="map-enabled"><span>Enabled</span></label></div><label>Label<input type="text" class="map-label" maxlength="32" required></label><div class="mapping-fields"><label>ATEM input<select class="map-source"></select></label><label>Priority<input type="number" class="map-priority" min="1" max="6" step="1" required></label></div><label class="check-label"><input type="checkbox" class="map-active-high"><span>GPIO HIGH means locked</span></label></section></template>
+</body>
+</html>
