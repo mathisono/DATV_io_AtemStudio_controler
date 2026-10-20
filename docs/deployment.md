@@ -1,5 +1,7 @@
 # Build, install and commission
 
+For **LattePanda 3 Delta / Linux Mint** and its onboard Arduino, use the [separate deployment guide](lattepanda.md). This page retains the ESP32 installation steps.
+
 This firmware runs on the ESP32 and serves its control page locally. The original ATEM Television Studio receives commands over Ethernet. The ESP32 does not connect to the ATEM by USB or RS-232, and no computer is required after configuration.
 
 ## 1. Choose the board and input interface

@@ -106,12 +106,25 @@
       const source = Number(button.dataset.source);
       button.disabled = !canControl || (needsSource && (!Number.isInteger(source) || source < 0 || source > 6));
     });
-    $('resume-auto').disabled = !canControl || status.mode === 'auto';
+    $('resume-auto').disabled = !canControl || status.mode === 'auto' || status.arduino?.fresh === false;
     $('pause-auto').disabled = !canWrite || status.mode !== 'auto';
     $('settings-fields').disabled = !canWrite || !state.formReady;
     $('save-settings').disabled = !canWrite || !state.dirty;
     $('discard-settings').disabled = !canWrite || !state.dirty;
     $('restart-controller').disabled = !canWrite;
+    const osNetworking = status?.capabilities?.osNetworking === true;
+    for (const name of ['hostname', 'wifiSsid', 'wifiPassword', 'clearWifiPassword']) {
+      field(name).closest(name === 'wifiPassword' || name === 'clearWifiPassword' ? '.password-setting' : 'label').hidden = osNetworking;
+      field(name).disabled = osNetworking || (name === 'wifiPassword' && field('clearWifiPassword').checked);
+    }
+    $('restart-controller').closest('.restart-panel').hidden = status?.capabilities?.restart === false;
+    $('os-network-help').hidden = !osNetworking;
+    $('arduino-status').hidden = !status?.arduino;
+    if (status?.arduino) {
+      $('arduino-status').textContent = status.arduino.fresh ? 'Onboard Arduino connected · receiver inputs are current.' : 'Onboard Arduino status unknown. Automatic routing is paused; check the USB serial connection.';
+      $('arduino-status').className = `notice ${status.arduino.fresh ? 'subtle' : 'error'}`;
+    }
+    $('dashboard-access-help').textContent = osNetworking ? 'Sign in as admin. Networking is managed in Linux Mint.' : 'Sign in as admin. The device password also protects its setup Wi-Fi network.';
     $('save-state').textContent = state.busy ? 'Applying change…' : !state.formReady ? 'Waiting for settings…' : state.dirty ? 'Unsaved changes' : state.rebootRequired ? 'Saved · restart required for network changes' : 'Settings are up to date';
     $('save-state').classList.toggle('dirty', state.dirty || state.rebootRequired);
   }
@@ -152,7 +165,7 @@
     $('policy-help').textContent = policyText[policy] || '';
     $('conflict-source-label').hidden = policy !== 'conflict';
     $('interval-help').textContent = policy === 'priority' ? 'Stored for the other policies; ignored by priority selection.' : policy === 'conflict' ? 'Continuous multiple-lock delay. 300 seconds = 5 minutes.' : 'Dwell time between locked inputs. 300 seconds = 5 minutes.';
-    field('wifiPassword').disabled = field('clearWifiPassword').checked;
+    field('wifiPassword').disabled = state.status?.capabilities?.osNetworking === true || field('clearWifiPassword').checked;
     if (field('clearWifiPassword').checked) field('wifiPassword').value = '';
   }
 
@@ -190,8 +203,9 @@
       card.querySelector('.input-label').title = label;
       card.querySelector('.input-route').textContent = `ATEM input ${input.source} · GPIO ${input.gpio}`;
       const badge = card.querySelector('.lock-badge');
-      badge.textContent = !input.enabled ? 'DISABLED' : input.qualifying ? (input.locked ? 'RELEASING' : 'ACQUIRING') : input.locked ? 'LOCKED' : 'NO LOCK';
-      badge.className = `badge lock-badge ${!input.enabled ? 'muted' : input.qualifying ? 'warning' : input.locked ? 'good' : 'muted'}`;
+      const unknown = input.known === false;
+      badge.textContent = !input.enabled ? 'DISABLED' : unknown ? 'UNKNOWN' : input.qualifying ? (input.locked ? 'RELEASING' : 'ACQUIRING') : input.locked ? 'LOCKED' : 'NO LOCK';
+      badge.className = `badge lock-badge ${!input.enabled ? 'muted' : unknown || input.qualifying ? 'warning' : input.locked ? 'good' : 'muted'}`;
       card.classList.toggle('is-disabled', !input.enabled);
       const isProgram = Boolean(live && status.atem.program === input.source);
       const isPreview = Boolean(live && status.atem.preview === input.source);
@@ -199,7 +213,7 @@
       card.classList.toggle('is-preview', isPreview);
       card.querySelector('.program-tally').classList.toggle('active', isProgram);
       card.querySelector('.preview-tally').classList.toggle('active', isPreview);
-      card.querySelector('.raw-level').textContent = `GPIO ${input.rawHigh ? 'HIGH' : 'LOW'} · ${input.activeHigh ? 'active H' : 'active L'}`;
+      card.querySelector('.raw-level').textContent = unknown ? 'GPIO status unknown' : `GPIO ${input.rawHigh ? 'HIGH' : 'LOW'} · ${input.activeHigh ? 'active H' : 'active L'}`;
       card.querySelector('.lock-timing').textContent = input.qualifying ? `${Math.ceil(number(input.remainingMs))} ms` : '';
       card.querySelectorAll('[data-action]').forEach((button) => {
         button.dataset.source = String(input.source);

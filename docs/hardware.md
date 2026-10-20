@@ -1,5 +1,7 @@
 # Deployment hardware and receiver lock wiring
 
+The **LattePanda 3 Delta** input pinout and internal USB arrangement are in [the LattePanda guide](lattepanda.md). The voltage and pin details below apply to ESP32.
+
 ## Recommended build
 
 Use an **Olimex ESP32-POE-ISO with an ESP32-WROOM module**, six electrically conditioned lock inputs, and wired Ethernet to the same control network as the ATEM. The firmware environment is `esp32-poe-iso`. The standard 4 MB board is sufficient for this build; a WROVER variant has different Ethernet-clock/PSRAM pin requirements and is not the configured target.

@@ -1,6 +1,6 @@
 # Validation scope
 
-This initial version is software-tested and cross-compiled. No physical ESP32,
+This initial version is software-tested and cross-compiled. No physical LattePanda, ESP32,
 DVB-S2 demodulator or original ATEM Television Studio was available during
 implementation. Treat the first installation as commissioning, not as a previously
 proven field deployment.
@@ -9,9 +9,12 @@ proven field deployment.
 
 ```sh
 python scripts/test_native.py
+python3 linux/build.py
+python3 -m unittest discover -s test/linux -v
 npm ci --ignore-scripts
 npm test
 pio run -e esp32-poe-iso -e esp32dev_wifi
+pio run -d firmware/lattepanda-inputs
 ```
 
 The native runner builds the real hardware-independent C++ modules with C++17,
@@ -33,8 +36,27 @@ because it could not inspect `/proc`. Dashboard tests validate DOM interactions,
 not layout: browser screenshot verification was unavailable because the Chromium
 download endpoints returned invalid archives.
 
-GitHub Actions repeats the native/dashboard tests and both firmware builds. The
+GitHub Actions repeats the native/dashboard tests, Linux integration tests, both
+ESP32 builds and the onboard Arduino compile check. The
 workflow neither flashes hardware nor controls an on-air switcher.
+
+## LattePanda / Linux addition
+
+- The shared Linux library builds with C++17 and warnings treated as errors.
+- Nine host integration tests pass against the real shared core, pseudo-terminal
+  USB serial simulation, loopback UDP and a local HTTP server. They verify
+  freshness, bounded serial parsing, stale/duplicate replies, startup/reconnect,
+  automatic-command cancellation, actual Program feedback, operator takeover,
+  authentication, CSRF, input validation and private atomic settings persistence.
+- Dashboard checks cover unknown Arduino inputs, arming restrictions, manual
+  control without input telemetry and platform-specific setup fields. Existing
+  ESP32 dashboard cases still pass.
+- The ATmega32U4 firmware compiles with the pinned Leonardo profile. This is a
+  compile check; the vendor board package/bootloader upload and physical internal
+  USB link have not been exercised. See [LattePanda deployment](lattepanda.md).
+- The systemd unit passes `systemd-analyze verify`; actual service installation,
+  serial permissions, Linux Mint hardware support and power recovery need bench
+  verification. No receiver firmware/MIB values are fabricated.
 
 ## ProView 7100 documentation review
 
@@ -42,7 +64,7 @@ The [receiver compatibility review](receivers/harmonic-proview-7100.md) identifi
 dry-contact alarm wiring, shared video modes and documented receiver monitoring
 interfaces. This is a review of manufacturer and integration documentation, not
 a successful hardware interoperability test. **SNMP/XML polling, trap reception,
-live modulation reporting and a receiver-status freshness gate are not implemented
+live modulation reporting and a network-polled receiver-status freshness gate are not implemented
 in the current firmware.** Matching receiver firmware/MIB/API information and
 observed responses are required before those features can be implemented and
 validated. The existing GPIO `locked` status only reports qualified input state.

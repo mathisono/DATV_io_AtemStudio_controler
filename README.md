@@ -1,9 +1,16 @@
 # DATV receiver lock → ATEM controller
 
-ESP32 firmware that watches six DVB-S2 receiver lock/alarm inputs and selects the
-associated video input on an **original six-input Blackmagic ATEM Television
-Studio**. A web page served by the ESP32 provides manual switching, actual
-Program/Preview feedback, live alarm status, and persistent configuration.
+Two maintained deployment targets watch six DVB-S2 receiver lock/alarm inputs and
+select the associated video input on an **original six-input Blackmagic ATEM
+Television Studio**:
+
+- **LattePanda 3 Delta / Linux Mint**, using the onboard Arduino over internal USB.
+  Start with the [LattePanda deployment guide](docs/lattepanda.md).
+- **ESP32**, retaining the Olimex Ethernet and generic Wi-Fi firmware builds below.
+
+Both use the same arbitration, Program coordinator, ATEM protocol code and local
+web dashboard. The dashboard provides manual switching, actual Program/Preview
+feedback, live alarm status and persistent configuration.
 
 This installation uses **Harmonic ProView 7100** receivers. Their documented GPI
 outputs are configurable **dry relay contacts**, so the input interface must sense
@@ -11,9 +18,12 @@ contacts using its own supply. See the [ProView compatibility and monitoring
 review](docs/receivers/harmonic-proview-7100.md) before wiring or arming automation.
 
 The configured receiver alarm must represent valid decoded video. Video connects
-directly from each receiver to the ATEM; the ESP32 handles alarm inputs and
+directly from each receiver to the ATEM; the selected controller handles alarm inputs and
 Ethernet control only. It sends the ATEM's UDP control protocol on port **9910**.
 It does not use RS-232 or the ATEM's USB port.
+
+The standalone ESP32 deployment is shown below; the LattePanda replaces it with
+an onboard Arduino input reader plus a Linux host service.
 
 ```mermaid
 flowchart TD
@@ -25,7 +35,7 @@ flowchart TD
 ```
 
 **Status: initial implementation, compiled and tested in software. Physical
-ESP32/receiver/ATEM commissioning is still required.** See
+LattePanda/ESP32/receiver/ATEM commissioning is still required.** See
 [deployment](docs/deployment.md) and [validation](docs/validation.md).
 Receiver SNMP/XML polling and trap reception are **not implemented** in this
 version; the current lock indications come from qualified GPIO inputs.
@@ -76,7 +86,15 @@ designated source is selected even without its own alarm lock. This is a
 continuous-overlap timer, not a rolling history of receiver events. See the
 [complete behavior description](docs/behavior.md).
 
-## Recommended hardware
+## Hardware targets
+
+The primary host target is now **LattePanda 3 Delta running Linux Mint**. The
+onboard Arduino reads six conditioned inputs on D4–D9 through internal USB CDC.
+The Linux host serves the dashboard and controls ATEM over Ethernet. Arduino
+status loss pauses automation and displays inputs as unknown; restoration requires
+explicit rearming. [Build and install the Mint service](docs/lattepanda.md).
+
+### Standalone ESP32 option
 
 Use the **Olimex ESP32-POE-ISO, standard ESP32-WROOM variant**, an appropriately
 conditioned six-channel contact-sensing interface, and wired Ethernet. The board has
@@ -99,7 +117,7 @@ revision, relay/contact specifications and complete fault behavior to finish the
 input circuit. GPIO13 and GPIO36 also have existing pull-ups on the Olimex board.
 Read the [pin table and wiring guide](docs/hardware.md).
 
-## Build and install
+## ESP32 build and install
 
 Install [PlatformIO](https://docs.platformio.org/en/latest/core/installation/index.html),
 open this directory, and build the intended board:
@@ -148,6 +166,9 @@ keyers, or firmware updates.
 
 ```sh
 python scripts/test_native.py
+python3 linux/build.py
+python3 -m unittest discover -s test/linux -v
+python3 -m platformio run -d firmware/lattepanda-inputs
 npm ci --ignore-scripts
 npm test
 pio run -e esp32-poe-iso -e esp32dev_wifi
@@ -155,12 +176,15 @@ pio run -e esp32-poe-iso -e esp32dev_wifi
 
 Native tests require a C++17 compiler and Python 3. Dashboard tests use Node.js
 and development-only jsdom; neither is needed on the ESP32. GitHub Actions runs
-these checks and both firmware builds. See [test scope](docs/validation.md).
+these checks, both ESP32 firmware builds and the onboard Arduino compile check. See [test scope](docs/validation.md).
 
 ## Documentation and code
 
 | Area | Location |
 | --- | --- |
+| LattePanda / Mint deployment and internal USB firmware | [docs/lattepanda.md](docs/lattepanda.md) |
+| Linux service and shared-core bridge | [linux](linux) |
+| Onboard Arduino input firmware | [firmware/lattepanda-inputs](firmware/lattepanda-inputs) |
 | Field wiring and board selection | [docs/hardware.md](docs/hardware.md) |
 | ProView 7100 contacts, video/RF compatibility and proposed network monitoring | [docs/receivers/harmonic-proview-7100.md](docs/receivers/harmonic-proview-7100.md) |
 | ProView firmware collection and ordered implementation checklist | [docs/receivers/proview-next-steps.md](docs/receivers/proview-next-steps.md) |

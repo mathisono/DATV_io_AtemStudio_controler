@@ -7,4 +7,5 @@ __pycache__/
 .vscode/
 secrets.h
 config.local.json
+config.local.json.lock
 node_modules/

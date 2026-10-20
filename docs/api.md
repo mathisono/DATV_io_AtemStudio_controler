@@ -1,5 +1,7 @@
 # Local HTTP API
 
+The Linux target serves these control/status endpoints and dashboard on port 8080 by default. It adds `arduino` freshness, per-input `known` (unknown levels are null), and `capabilities` flags. Linux networking stays in the OS; `/api/reboot` is not exposed. Serial identity is configured locally. See [LattePanda details](lattepanda.md).
+
 The ESP32 serves HTTP on port 80. Every route uses HTTP Basic authentication:
 username `admin`, device password printed over USB serial and saved in NVS. HTTPS
 is not implemented; use a controlled local network. All write requests require
